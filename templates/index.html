@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Interactive Storytelling</title>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+	<header>
+		<h1>Interactive Storytelling</h1>
+	</header>
+	<div id="content">
+		<div id="story">
+			{{ story|safe }}
+		</div>
+		<canvas id="canvas" width="500" height="500"></canvas>
+		<form id="choices-form">
+			<label for="choice1">Choice 1:</label>
+			<input type="text" id="choice1" name="choice1"><br>
+
+			<label for="choice2">Choice 2:</label>
+			<input type="text" id="choice2" name="choice2"><br>
+
+			<label for="choice3">Choice 3:</label>
+			<input type="text" id="choice3" name="choice3"><br>
+
+			<button type="submit" id="submit-button">Submit Choices</button>
+		</form>
+	</div>
+	<footer>
+		<p>&copy; 2023 Interactive Storytelling</p>
+	</footer>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
