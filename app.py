@@ -1,60 +1,88 @@
+from flask import Flask, render_template, jsonify, request
 import openai
-from flask import Flask, render_template, request, jsonify
 
-app = Flask(__name__, template_folder='templates')
+app = Flask(__name__)
+initialCall = True
 
-# Set up the OpenAI API credentials
-openai.api_key = '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'
+# Initialize OpenAI API with your API key
+openai.api_key = "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"
+
+# Define a dictionary to store user progress data
+user_data = {}
+
+# Global variable to track initialization status
+initialized = False
 
 @app.route('/')
 def index():
-    # Generate the initial story description using the OpenAI API
-    initial_story = generate_story()
-    return render_template('index.html', story=initial_story)
+    global initialized
+    if initialized:
+        # Initialization has already been done, return JSON response
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify(story=user_data['story'], choices=user_data['choices'])
+        # Initialization has already been done, return HTML response
+        else:
+            return render_template('index.html', story=user_data['story'], choices=user_data['choices'])
+    else:
+        # Initialization code
+        prompt = "Create an initial setting for a detective story that balances tension and credibility. The setting should establish a world view that is believable and creates a sense of intrigue or mystery. The story should be set in a specific location, and the setting should establish the tone and atmosphere of the story. Use specific details and sensory descriptions to make the setting vivid and compelling. The setting should be open-ended and allow for a variety of possible storylines and outcomes."
+        storyResponse = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=prompt,
+            max_tokens=1024,
+            n=1,
+            stop=None,
+            temperature=0.5,
+        )
+        story = storyResponse.choices[0].text
+        choicesPrompt  = "Create the initial 3 choices for this detective story that balance tension and credibility. The choices should be believable and consistent with the established world view. Each choice should have a distinct consequence that leads the story in a different direction. Use specific language and details to make the choices compelling and engaging. The choices should create a sense of urgency and keep the player invested in the story. The choices in the response should be separated by the text ###, which should be placed before each choice, including the first one."
+        choiceResponse = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt = story + choicesPrompt ,
+            max_tokens=1024,
+            n=1,
+            stop=None,
+            temperature=0.5,
+        )
+        user_data['story'] = story
+        user_data['choices'] = choiceResponse.choices[0].text
+        print("initial calling")
+        initialized = True
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify(story=story, choices=user_data['choices'])
+        else:
+            return render_template('index.html', story=story, choices=user_data['choices'])
 
-@app.route('/story')
-def story():
-    choice1 = request.args.get('choice1')
-    choice2 = request.args.get('choice2')
-    choice3 = request.args.get('choice3')
-    # Generate the updated story description and canvas data using the OpenAI API
-    updated_story, canvas_data = generate_story(choice1, choice2, choice3)
-    return jsonify({'story': updated_story, 'canvas': canvas_data})
-
-def generate_story(choice1=None, choice2=None, choice3=None):
-    # Set the starting prompt for the OpenAI API
-    prompt = "Once upon a time, there was a detective named John who was investigating a series of mysterious crimes. As he delved deeper into the case, he discovered that there was more to the crimes than initially met the eye. The story should be both credible and full of tension, with elements of both detective and wuxia genres. Please generate a story that balances these elements well."
-    # Add the player's choices to the prompt, if provided
-    if choice1:
-        prompt += " He decided to " + choice1 + " and found a clue that led him to the next part of the story."
-    if choice2:
-        prompt += " He then " + choice2 + " and discovered another clue that led him even further."
-    if choice3:
-        prompt += " Finally, he " + choice3 + " and uncovered the truth behind the mysterious crimes."
-    # Call the OpenAI API to generate the story content
-    response = openai.Completion.create(
-        engine="text-davinci-002",
-        prompt=prompt,
+# Define a route to handle user choices and update the story
+@app.route('/next-page/<choice>')
+def next_page(choice):
+    originalStory = user_data['story'] + "\n" + choice
+    prompt_story = originalStory + "\n" + " Create the next description that should include consequnce of player's movement and next events for this detective story that balances tension and credibility. The description should build on the established world view and the player's previous choices. It should create a sense of tension or urgency and reveal new information or clues that move the story forward. Use specific details and sensory descriptions to make the description vivid and engaging. The description should be open-ended and allow for a variety of possible storylines and outcomes. "
+    response_story = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt_story,
         max_tokens=1024,
         n=1,
         stop=None,
-        temperature=0.5
+        temperature=0.5,
     )
-    story_text = response.choices[0].text.strip()
-    # Parse the story text to extract the canvas data
-    canvas_data = []
-    for line in story_text.split('\n'):
-        if line.startswith('canvas:'):
-            parts = line.split(':')
-            canvas_data.append({
-                'x': int(parts[1]),
-                'y': int(parts[2]),
-                'radius': int(parts[3]),
-                'color': parts[4]
-            })
-    # Remove the canvas data from the story text
-    story_text = story_text.split('\n\n')[0]
-    return story_text, canvas_data
+    prompt_choices = originalStory + response_story.choices[0].text + "\n" + "Create 3 choices for next possibe player's choices of this detective story that balance tension and credibility. The choices should be consistent with the established world view and the player's previous choices. Each choice should have a distinct consequence that leads the story in a different direction. Use specific language and details to make the choices compelling and engaging. The choices should create a sense of urgency and keep the player invested in the story.The choices in the response should be separated by the text ###, which should be placed before each choice, including the first one."
+    response_choices = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=prompt_choices,
+        max_tokens=1024,
+        n=1,
+        stop=None,
+        temperature=0.5,
+    )
+    story = response_story.choices[0].text
+    choices = response_choices.choices[0].text
+    user_data['story'] = story
+    user_data['choices'] = choices
+    #print("story: "+story) # Print the value of story for debugging
+    #print("choices: "+choices) # Print the value of choices for debugging
+    return jsonify(story=story, choices=choices)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
