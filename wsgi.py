@@ -5,7 +5,7 @@ app = Flask(__name__)
 initialCall = True
 
 # Initialize OpenAI API with your API key
-openai.api_key = "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"
+openai.api_key = "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"
 
 # Define a dictionary to store user progress data
 user_data = {}
