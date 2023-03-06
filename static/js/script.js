@@ -12,11 +12,15 @@ window.onload = function() {
 	  const data = JSON.parse(response);
 	  const storyContent = data.story;
 	  const choicesContent = data.choices;
-	  console.log(choicesContent);
 	  const choicesList = choicesContent.split('###').slice(1, 4);
 	  //console.log(choicesList);
 	
 	  story.innerHTML = storyContent;
+	  var paragraphs = document.querySelectorAll(".story p");
+for (var i = 0; i < paragraphs.length; i++) {
+  paragraphs[i].classList.add("text-light", "p-3", "rounded");
+}
+
 	  choices.innerHTML = '';
 	  choicesList.forEach(function(choiceText) {
 		//console.log("choiceText: "+choiceText);

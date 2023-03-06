@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify, request
 import openai
+import re
 
 app = Flask(__name__)
 initialCall = True
@@ -55,12 +56,16 @@ def index():
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": f"{systemRoleAuto}"},
-            {"role": "user", "content": f"{promptStory} {choicesPrompt}"},
+            {"role": "user", "content": f"{story} {choicesPrompt}"},
             #{"role": "assistant", "content": f"{contentAssistant}"},
         ],
         max_tokens= 1500,
     )
-        user_data['story'] = story
+        # Split the text into paragraphs using a regular expression
+        paragraphs = re.split(r"\n\s*\n", story)
+        #Insert <p> tags around each paragraph
+        formatted_story = "\n".join([f"<p>{paragraph}</p>" for paragraph in paragraphs])
+        user_data['story'] = formatted_story
         user_data['choices'] = choiceResponse.choices[0].message['content']
         print("initial calling")
         initialized = True
