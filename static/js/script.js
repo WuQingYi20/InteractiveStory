@@ -42,7 +42,6 @@ window.onload = function() {
 	request.send();
   
 	// Listen for clicks on the choices and update the story and choices accordingly
-	// Listen for clicks on the choices and update the story and choices accordingly
 choices.addEventListener('click', function(event) {
 	if (event.target.tagName === 'A') {
 	  event.preventDefault();
