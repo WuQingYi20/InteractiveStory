@@ -8,22 +8,48 @@ window.onload = function() {
 	  choice.classList.add('btn', 'btn-outline-light', 'me-2', 'mb-2');
 	});
   
+	// Define the previousStories array
+	let previousStories = [];
+  
 	function updateStoryAndChoices(response) {
 	  const data = JSON.parse(response);
 	  const storyContent = data.story;
 	  const choicesContent = data.choices;
+	  const summaryContent = data.summary;
+	  console.log("summaryContent: "+summaryContent);
+  
+	  // add summary to html
+	  // Add the current story and choice to previousStories array
+	  if(summaryContent != null){
+		previousStories.push(`<b>previous action:</b> ${summaryContent}`);
+	  }
+	  const recordList = document.getElementById('record-list');
+	  if (previousStories.length === 0) {
+		const defaultItem = document.createElement('li');
+		defaultItem.classList.add('list-group-item');
+		defaultItem.innerHTML = 'You just started your journey.';
+		recordList.appendChild(defaultItem);
+	  } else {
+		recordList.innerHTML = '';
+		for (let i = 0; i < previousStories.length; i++) {
+		  const item = document.createElement('li');
+		  item.classList.add('list-group-item');
+		  item.innerHTML = previousStories[i];
+		  recordList.appendChild(item);
+		}
+	  }
+	
 	  const choicesList = choicesContent.split('###').slice(1, 4);
-	  //console.log(choicesList);
 	
 	  story.innerHTML = storyContent;
+	  //formatting the story
 	  var paragraphs = document.querySelectorAll(".story p");
-for (var i = 0; i < paragraphs.length; i++) {
-  paragraphs[i].classList.add("text-light", "p-3", "rounded");
-}
-
+	  for (var i = 0; i < paragraphs.length; i++) {
+		paragraphs[i].classList.add("text-light", "p-3", "rounded");
+	  }
+  
 	  choices.innerHTML = '';
 	  choicesList.forEach(function(choiceText) {
-		//console.log("choiceText: "+choiceText);
 		const li = document.createElement('li');
 		const a = document.createElement('a');
 		a.href = '#';
@@ -33,7 +59,7 @@ for (var i = 0; i < paragraphs.length; i++) {
 		choices.appendChild(li);
 	  });
 	}
-	
+  
 	// Load the initial story and choices when the page first loads
 	const request = new XMLHttpRequest();
 	request.open('GET', '/');
@@ -64,16 +90,16 @@ choices.addEventListener('click', function(event) {
 	  loading.classList.add('d-block');
   
 	  request.onload = function() {
-		// Remove loading element from the DOM
-		loading.remove();
-  
-		// Update story and choices
 		updateStoryAndChoices(request.responseText);
+  
+		// Remove loading element from the DOM
+		const loading = document.getElementById('loading');
+		if (loading) {
+		  loading.remove();
+		}
 	  };
+  
 	  request.send();
 	}
   });
-  
-	  
-  };
-  
+};  

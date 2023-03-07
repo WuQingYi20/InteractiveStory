@@ -4,6 +4,7 @@ import re
 
 app = Flask(__name__)
 initialCall = True
+currentDescription = ""
 
 # Initialize OpenAI API with your API key
 openai.api_key = "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"
@@ -17,6 +18,7 @@ initialized = False
 @app.route('/')
 def index():
     global initialized
+    global currentDescription
     if initialized:
         # Initialization has already been done, return JSON response
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -46,6 +48,7 @@ def index():
         max_tokens= 1500,
     )
         story = storyResponse.choices[0].message['content']
+        currentDescription = story
         choicesPrompt  = """Create the initial 3 choices for this detective story that balance tension and credibility. 
         The choices should be believable and consistent with the established world view. 
         Each choice should have a distinct consequence that leads the story in a different direction. 
@@ -61,6 +64,7 @@ def index():
         ],
         max_tokens= 1500,
     )
+        
         # Split the text into paragraphs using a regular expression
         paragraphs = re.split(r"\n\s*\n", story)
         #Insert <p> tags around each paragraph
@@ -92,7 +96,7 @@ def next_page(choice):
         max_tokens= 1500,
     )
     prompt_choices = originalStory + response_story.choices[0].message['content'] + "\n" + "Create 3 choices for next possibe player's choices of this detective story that balance tension and credibility. The choices should be consistent with the established world view and the player's previous choices. Each choice should have a distinct consequence that leads the story in a different direction. Use specific language and details to make the choices compelling and engaging. The choices should create a sense of urgency and keep the player invested in the story.The choices in the response should be separated by the text ###, which should be placed before each choice, including the first one."
-    response_choices = response = openai.ChatCompletion.create(
+    response_choices = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
             {"role": "system", "content": f"{systemRoleAuto}"},
@@ -103,12 +107,22 @@ def next_page(choice):
     )
     story = response_story.choices[0].message['content']
     choices = response_choices.choices[0].message['content']
+    # get summary of previous story and actions by gpt-3.5-turbo and original story
+    prompt_summary = originalStory + "\n" + "Create a summary of the previous story and actions. The summary should be concise and include the most important details of the story. It should be written in the third person and should not include any dialogue. The summary should be open-ended and allow for a variety of possible storylines and outcomes.However, it should not be longer than 3 sentences."
+    response_summary = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": f"{systemRoleAuto}"},
+            {"role": "user", "content": f"{prompt_summary}"},
+            #{"role": "assistant", "content": f"{contentAssistant}"},
+        ],
+        max_tokens= 1500,
+    )
+
     user_data['story'] = story
     user_data['choices'] = choices
-    #print("story: "+story) # Print the value of story for debugging
-    #print("choices: "+choices) # Print the value of choices for debugging
-    return jsonify(story=story, choices=choices)
-
+    user_data['summary'] = response_summary.choices[0].message['content']
+    return jsonify(story=story, choices=choices, summary=user_data['summary'])
 
 if __name__ == '__main__':
     app.run(debug=True)
