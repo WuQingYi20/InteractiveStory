@@ -9,7 +9,7 @@ initialCall = True
 currentDescription = ""
 
 # Initialize OpenAI API with your API key
-openai.api_key = "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"
+openai.api_key = "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"
 
 # Define a dictionary to store user progress data
 user_data = {}
@@ -53,14 +53,10 @@ def index():
         ],
         max_tokens= 1500,
     )
-        
-        # Split the text into paragraphs using a regular expression
-        paragraphs = re.split(r"\n\s*\n", story)
         #Insert <p> tags around each paragraph
-        formatted_story = "\n".join([f"<p>{paragraph}</p>" for paragraph in paragraphs])
+        formatted_story = format_story(story)
         user_data['story'] = formatted_story
         user_data['choices'] = choiceResponse.choices[0].message['content']
-        print("initial calling")
         initialized = True
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify(story=story, choices=user_data['choices'])
@@ -108,10 +104,18 @@ def next_page(choice):
         max_tokens= 1500,
     )
 
-    user_data['story'] = story
+    formatted_story = format_story(story)
+    user_data['story'] = formatted_story
     user_data['choices'] = choices
     user_data['summary'] = response_summary.choices[0].message['content']
-    return jsonify(story=story, choices=choices, summary=user_data['summary'])
+    return jsonify(story=formatted_story, choices=choices, summary=user_data['summary'])
+
+def format_story(story):
+    # Split the text into paragraphs using a regular expression
+    paragraphs = re.split(r"\n\s*\n", story)
+    #Insert <p> tags around each paragraph
+    formatted_story = "\n".join([f"<p>{paragraph}</p>" for paragraph in paragraphs])
+    return formatted_story
 
 if __name__ == '__main__':
     app.run(debug=True)
