@@ -9,7 +9,7 @@ initialCall = True
 currentDescription = ""
 
 # Initialize OpenAI API with your API key
-openai.api_key = "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"
+openai.api_key = "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"
 
 # Define a dictionary to store user progress data
 user_data = {}
