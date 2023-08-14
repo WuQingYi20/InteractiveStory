@@ -2,14 +2,20 @@ from flask import Flask, render_template, jsonify, request
 import openai
 import re
 from prompts import prompts
+from dotenv import load_dotenv
+import os
 
+# Load the .env file
+load_dotenv()
 
 app = Flask(__name__)
 initialCall = True
 currentDescription = ""
 
+
+
 # Initialize OpenAI API with your API key
-openai.api_key = "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"
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Define a dictionary to store user progress data
 user_data = {}
